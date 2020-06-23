@@ -1,15 +1,10 @@
-import { User } from '@firebase/auth-types';
-import { ReflectiveInjector, Provider } from '@angular/core';
-import { Observable } from 'rxjs/Observable'
-import { Subject } from 'rxjs/Subject'
-import { Observer } from 'rxjs/Observer';
+import { User } from 'firebase';
+import { Observable, Subject } from 'rxjs'
 import { TestBed, inject } from '@angular/core/testing';
-import { _do } from 'rxjs/operator/do';
-import { take } from 'rxjs/operator/take';
-import { skip } from 'rxjs/operator/skip';
-import { FirebaseApp, FirebaseAppConfig, AngularFireModule, FirebaseAppName } from 'angularfire2';
-import { AngularFireAuth, AngularFireAuthModule } from 'angularfire2/auth';
+import { FirebaseApp, FirebaseOptionsToken, AngularFireModule, FirebaseNameOrConfigToken } from '@angular/fire';
+import { AngularFireAuth, AngularFireAuthModule } from '@angular/fire/auth';
 import { COMMON_CONFIG } from './test-config';
+import { take, skip } from 'rxjs/operators';
 
 function authTake(auth: Observable<any>, count: number): Observable<any> {
   return take.call(auth, 1);
@@ -140,8 +135,8 @@ describe('AngularFireAuth with different app', () => {
         AngularFireAuthModule
       ],
       providers: [
-        { provide: FirebaseAppName, useValue: FIREBASE_APP_NAME_TOO },
-        { provide: FirebaseAppConfig, useValue:  COMMON_CONFIG }
+        { provide: FirebaseNameOrConfigToken, useValue: FIREBASE_APP_NAME_TOO },
+        { provide: FirebaseOptionsToken, useValue: COMMON_CONFIG }
       ]
     });
     inject([FirebaseApp, AngularFireAuth], (app_: FirebaseApp, _afAuth: AngularFireAuth) => {

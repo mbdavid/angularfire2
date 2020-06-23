@@ -1,14 +1,12 @@
-import { DocumentReference, SetOptions, DocumentSnapshot } from '@firebase/firestore-types';
-import { Observable } from 'rxjs/Observable';
-import { Subscriber } from 'rxjs/Subscriber';
-import { QueryFn, AssociatedReference, Action } from '../interfaces';
+import { Observable, from } from 'rxjs';
+import { DocumentReference, SetOptions, DocumentData, QueryFn, Action, DocumentSnapshot } from '../interfaces';
 import { fromDocRef } from '../observable/fromRef';
-import 'rxjs/add/operator/map';
-
-import { Injectable } from '@angular/core';
+import { map } from 'rxjs/operators';
 
 import { AngularFirestore, associateQuery } from '../firestore';
 import { AngularFirestoreCollection } from '../collection/collection';
+import { firestore } from 'firebase';
+import { runInZone } from '@angular/fire';
 
 /**
  * AngularFirestoreDocument service
@@ -32,7 +30,7 @@ import { AngularFirestoreCollection } from '../collection/collection';
  * // OR! Transform using Observable.from() and the data is unwrapped for you
  * Observable.from(fakeStock).subscribe(value => console.log(value));
  */
-export class AngularFirestoreDocument<T> {
+export class AngularFirestoreDocument<T=DocumentData> {
 
   /**
    * The contstuctor takes in a DocumentReference to provide wrapper methods
@@ -71,17 +69,17 @@ export class AngularFirestoreDocument<T> {
    * @param path
    * @param queryFn
    */
-  collection<T>(path: string, queryFn?: QueryFn): AngularFirestoreCollection<T> {
+  collection<R=DocumentData>(path: string, queryFn?: QueryFn): AngularFirestoreCollection<R> {
     const collectionRef = this.ref.collection(path);
     const { ref, query } = associateQuery(collectionRef, queryFn);
-    return new AngularFirestoreCollection<T>(ref, query, this.afs);
+    return new AngularFirestoreCollection<R>(ref, query, this.afs);
   }
 
   /**
    * Listen to snapshot updates from the document.
    */
-  snapshotChanges(): Observable<Action<DocumentSnapshot>> {
-    const fromDocRef$ = fromDocRef(this.ref);
+  snapshotChanges(): Observable<Action<DocumentSnapshot<T>>> {
+    const fromDocRef$ = fromDocRef<T>(this.ref);
     const scheduledFromDocRef$ = this.afs.scheduler.runOutsideAngular(fromDocRef$);
     return this.afs.scheduler.keepUnstableUntilFirst(scheduledFromDocRef$);
   }
@@ -89,9 +87,21 @@ export class AngularFirestoreDocument<T> {
   /**
    * Listen to unwrapped snapshot updates from the document.
    */
-  valueChanges(): Observable<T|null> {
-    return this.snapshotChanges().map(action => {
-      return action.payload.exists ? action.payload.data() as T : null;
-    });
+  valueChanges(): Observable<T|undefined> {
+    return this.snapshotChanges().pipe(
+      map(action => {
+        return action.payload.data();
+      })
+    );
+  }
+
+  /**
+   * Retrieve the document once.
+   * @param options
+   */
+  get(options?: firestore.GetOptions) {
+    return from(this.ref.get(options)).pipe(
+      runInZone(this.afs.scheduler.zone)
+    );
   }
 }
