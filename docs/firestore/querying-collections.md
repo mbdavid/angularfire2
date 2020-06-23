@@ -5,13 +5,13 @@ If you know the [Firestore query API](https://firebase.google.com/docs/reference
 
 ## Creating a query with primitive/scalar values
 
-Queries are created by building on the [`firebase.firestore.Reference`](https://firebase.google.com/docs/reference/js/firebase.firestore.Reference).
+Queries are created by building on the [`firebase.firestore.CollectionReference`](https://firebase.google.com/docs/reference/js/firebase.firestore.CollectionReference).
 
 ```ts
 afs.collection('items', ref => ref.where('size', '==', 'large'))
 ```
 
-**Query Options:**
+### Query options
 
 | method   | purpose            |
 | ---------|--------------------|
@@ -59,8 +59,10 @@ When we call [`switchMap` on the Subject](https://www.learnrxjs.io/operators/tra
 
 ```ts
 const size$ = new Subject<string>();
-const queryObservable = size$.switchMap(size =>
-  afs.collection('items', ref => ref.where('size', '==', size)).valueChanges();
+const queryObservable = size$.pipe(
+  switchMap(size => 
+    afs.collection('items', ref => ref.where('size', '==', size)).valueChanges()
+  )
 );
 
 // subscribe to changes
@@ -75,17 +77,15 @@ size$.next('large');
 size$.next('small');
 ```
 
-**Example app:**
+### Example app
  
 [See this example in action on StackBlitz](https://stackblitz.com/edit/angularfire-db-api-fbad9p).
 
 ```ts
 import { Component } from '@angular/core';
-import { AngularFirestore } from 'angularfire2/firestore';
-import { Observable } from 'rxjs/Observable';
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
-import 'rxjs/add/operator/switchMap';
-import 'rxjs/add/observable/combineLatest';
+import { AngularFirestore } from '@angular/fire/firestore';
+import { Observable, BehaviorSubject, combineLatest } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 export interface Item {
   text: string;
@@ -133,16 +133,18 @@ export class AppComponent {
   constructor(afs: AngularFirestore) {
     this.sizeFilter$ = new BehaviorSubject(null);
     this.colorFilter$ = new BehaviorSubject(null);
-    this.items$ = Observable.combineLatest(
+    this.items$ = combineLatest(
       this.sizeFilter$,
       this.colorFilter$
-    ).switchMap(([size, color]) => 
-      afs.collection('items', ref => {
-        let query : firebase.firestore.CollectionReference | firebase.firestore.Query = ref;
-        if (size) { query = query.where('size', '==', size) };
-        if (color) { query = query.where('color', '==', color) };
-        return query;
-      }).valueChanges()
+    ).pipe(
+      switchMap(([size, color]) => 
+        afs.collection('items', ref => {
+          let query : firebase.firestore.CollectionReference | firebase.firestore.Query = ref;
+          if (size) { query = query.where('size', '==', size) };
+          if (color) { query = query.where('color', '==', color) };
+          return query;
+        }).valueChanges()
+      )
     );
   }
   filterBySize(size: string|null) {
@@ -154,9 +156,9 @@ export class AppComponent {
 }
 ```
 
-**To run the above example as is, you need to have sample data in you firebase database with the following structure:**
- 
- ```json
+**To run the above example as is, you need to have sample data in your Firebase database with the following structure:**
+
+```json
 {
   "items": {
     "a" : {
@@ -176,6 +178,6 @@ export class AppComponent {
     }
   }
 }
- ```
+```
 
 ### [Next Step: Getting started with Firebase Authentication](../auth/getting-started.md)

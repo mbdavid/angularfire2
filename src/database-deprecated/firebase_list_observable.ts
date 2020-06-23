@@ -1,10 +1,6 @@
-import { Observable } from 'rxjs/Observable';
-import { Operator } from 'rxjs/Operator';
-import { Subscriber } from 'rxjs/Subscriber';
-import { Subscription } from 'rxjs/Subscription';
-import { Reference, DataSnapshot, ThenableReference } from '@firebase/database-types';
+import { Observable, Operator, Subscriber, Subscription } from 'rxjs';
 import * as utils from './utils';
-import { AFUnwrappedDataSnapshot, FirebaseOperationCases, QueryReference, DatabaseSnapshot, DatabaseReference } from './interfaces';
+import { Reference, DataSnapshot, ThenableReference, AFUnwrappedDataSnapshot, FirebaseOperationCases, QueryReference, DatabaseSnapshot, DatabaseReference } from './interfaces';
 
 export type FirebaseOperation = string | Reference | DataSnapshot | AFUnwrappedDataSnapshot;
 

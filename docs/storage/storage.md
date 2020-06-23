@@ -2,16 +2,16 @@
 
 > Cloud Storage is designed to help you quickly and easily store and serve user-generated content, such as photos and videos.
 
-### Import the NgModule
+### Import the `NgModule`
 
-Cloud Storage for AngularFire is contained in the `angularfire2/storage` module namespace. Import the `AngularFireStorageModule` in your `NgModule`. This sets up the `AngularFireStorage` service for dependency injection.
+Cloud Storage for AngularFire is contained in the `@angular/fire/storage` module namespace. Import the `AngularFireStorageModule` in your `NgModule`. This sets up the `AngularFireStorage` service for dependency injection.
 
 ```ts
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import { AppComponent } from './app.component';
-import { AngularFireModule } from 'angularfire2';
-import { AngularFireStorageModule } from 'angularfire2/storage';
+import { AngularFireModule } from '@angular/fire';
+import { AngularFireStorageModule } from '@angular/fire/storage';
 import { environment } from '../environments/environment';
 
 @NgModule({
@@ -32,7 +32,7 @@ Once the `AngularFireStorageModule` is registered you can inject the `AngularFir
 
 ```ts
 import { Component } from '@angular/core';
-import { AngularFireStorage } from 'angularfire2/storage';
+import { AngularFireStorage } from '@angular/fire/storage';
 
 @Component({
   selector: 'app-component',
@@ -45,17 +45,68 @@ export class AppComponent {
 
 ### Uploading blobs
 
-There are two options for uploading files. 
+There are three options for uploading files.
 
 
-| method   |                    | 
-| ---------|--------------------| 
-| `put(data: Blob, metadata?: storage.UploadMetadata): AngularFireUploadTask` | Starts the upload of the blob to the storage reference's path. Returns an `AngularFireUploadTask` for upload monitoring. | 
+| method   |                    |
+| ---------|--------------------|
+| `put(data: Blob, metadata?: storage.UploadMetadata): AngularFireUploadTask` | Starts the upload of the blob to the storage reference's path. Returns an `AngularFireUploadTask` for upload monitoring. |
 | `putString(data: string, format?: StringFormat, metadata?: UploadMetadata): AngularFireUploadTask` | Updates an existing item in the array. Accepts a key, database reference, or an unwrapped snapshot. |
+| `upload(path: string, data: StringFormat, metadata?: UploadMetadata): AngularFireUploadTask` | Upload or update a new file to the storage reference's path. Returns an `AngularFireUploadTask` for upload monitoring. |
+
+### Examples
+
+#### Uploading blobs with put
 
 ```ts
 import { Component } from '@angular/core';
-import { AngularFireStorage } from 'angularfire2/storage';
+import { AngularFireStorage } from '@angular/fire/storage';
+
+@Component({
+  selector: 'app-root',
+  template: `
+  <input type="file" (change)="uploadFile($event)">
+  `
+})
+export class AppComponent {
+  constructor(private storage: AngularFireStorage) { }
+  uploadFile(event) {
+    const file = event.target.files[0];
+    const filePath = 'name-your-file-path-here';
+    const ref = this.storage.ref(filePath);
+    const task = ref.put(file);
+  }
+}
+```
+
+#### Uploading blobs with putString
+
+```ts
+import { Component } from '@angular/core';
+import { AngularFireStorage } from '@angular/fire/storage';
+
+@Component({
+  selector: 'app-root',
+  template: `
+  <input type="file" (change)="uploadFile($event)">
+  `
+})
+export class AppComponent {
+  constructor(private storage: AngularFireStorage) { }
+  uploadFile(event) {
+    const file = event.target.files[0];
+    const filePath = 'name-your-file-path-here';
+    const ref = this.storage.ref(filePath);
+    const task = ref.putString(file);
+  }
+}
+```
+
+#### Uploading files with upload
+
+```ts
+import { Component } from '@angular/core';
+import { AngularFireStorage } from '@angular/fire/storage';
 
 @Component({
   selector: 'app-root',
@@ -77,15 +128,19 @@ export class AppComponent {
 
 An `AngularFireUploadTask` has methods for observing upload percentage as well as the final download URL.
 
-| method   |                    | 
-| ---------|--------------------| 
-| `snapshotChanges(): Observable<FirebaseStorage.UploadTaskSnapshot>` | Emits the raw `UploadTaskSnapshot` as the file upload progresses. | 
-| `percentageChanges(): Observable<number>` | Emits the upload completion percentage. | 
-| `downloadURL(): Observable<string>` | Emits the download url when available |
+| method   |                    |
+| ---------|--------------------|
+| `snapshotChanges(): Observable<FirebaseStorage.UploadTaskSnapshot>` | Emits the raw `UploadTaskSnapshot` as the file upload progresses. |
+| `percentageChanges(): Observable<number>` | Emits the upload completion percentage. |
+| `getDownloadURL(): Observable<any>` | Emits the download url when available |
 
 #### Example Usage
 
+The method `getDownloadURL()` doesn't rely on the task anymore, hence, in order to get the url we should use the finalize method from RxJS on top of the storage ref.
+
 ```ts
+import { finalize } from 'rxjs/operators';
+
 @Component({
   selector: 'app-root',
   template: `
@@ -101,12 +156,16 @@ export class AppComponent {
   uploadFile(event) {
     const file = event.target.files[0];
     const filePath = 'name-your-file-path-here';
+    const fileRef = this.storage.ref(filePath);
     const task = this.storage.upload(filePath, file);
-    
+
     // observe percentage changes
     this.uploadPercent = task.percentageChanges();
     // get notified when the download URL is available
-    this.downloadURL = task.downloadURL();
+    task.snapshotChanges().pipe(
+        finalize(() => this.downloadURL = fileRef.getDownloadURL() )
+     )
+    .subscribe()
   }
 }
 ```
@@ -132,6 +191,8 @@ export class AppComponent {
 ### Managing Metadata
 
 Cloud Storage for Firebase allows you to upload and download metadata associated with files. This is useful because you can store important metadata and download it without needing to download the entire file.
+
+### Examples
 
 #### Downloading metadata
 

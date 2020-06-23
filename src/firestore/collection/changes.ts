@@ -1,33 +1,32 @@
 import { fromCollectionRef } from '../observable/fromRef';
-import { Query, DocumentChangeType, DocumentChange } from '@firebase/firestore-types';
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/filter';
-import 'rxjs/add/operator/scan';
+import { Observable } from 'rxjs';
+import { map, filter, scan } from 'rxjs/operators';
 
-import { DocumentChangeAction, Action } from '../interfaces';
+import { Query, DocumentChangeType, DocumentChange, DocumentChangeAction, Action } from '../interfaces';
 
 /**
  * Return a stream of document changes on a query. These results are not in sort order but in
  * order of occurence.
  * @param query
  */
-export function docChanges(query: Query): Observable<DocumentChangeAction[]> {
+export function docChanges<T>(query: Query): Observable<DocumentChangeAction<T>[]> {
   return fromCollectionRef(query)
-    .map(action =>
-      action.payload.docChanges
-        .map(change => ({ type: change.type, payload: change })));
+    .pipe(
+      map(action =>
+        action.payload.docChanges()
+          .map(change => ({ type: change.type, payload: change } as DocumentChangeAction<T>))));
 }
 
 /**
  * Return a stream of document changes on a query. These results are in sort order.
  * @param query
  */
-export function sortedChanges(query: Query, events: DocumentChangeType[]): Observable<DocumentChangeAction[]> {
+export function sortedChanges<T>(query: Query, events: DocumentChangeType[]): Observable<DocumentChangeAction<T>[]> {
   return fromCollectionRef(query)
-    .map(changes => changes.payload.docChanges)
-    .scan((current, changes) => combineChanges(current, changes, events), [])
-    .map(changes => changes.map(c => ({ type: c.type, payload: c })));
+    .pipe(
+      map(changes => changes.payload.docChanges()),
+      scan((current, changes) => combineChanges(current, changes, events), []),
+      map(changes => changes.map(c => ({ type: c.type, payload: c } as DocumentChangeAction<T>))));
 }
 
 /**
@@ -37,7 +36,7 @@ export function sortedChanges(query: Query, events: DocumentChangeType[]): Obser
  * @param changes
  * @param events
  */
-export function combineChanges(current: DocumentChange[], changes: DocumentChange[], events: DocumentChangeType[]) {
+export function combineChanges<T>(current: DocumentChange<T>[], changes: DocumentChange<T>[], events: DocumentChangeType[]) {
   changes.forEach(change => {
     // skip unwanted change types
     if(events.indexOf(change.type) > -1) {
@@ -52,7 +51,7 @@ export function combineChanges(current: DocumentChange[], changes: DocumentChang
  * @param combined
  * @param change
  */
-export function combineChange(combined: DocumentChange[], change: DocumentChange): DocumentChange[] {
+export function combineChange<T>(combined: DocumentChange<T>[], change: DocumentChange<T>): DocumentChange<T>[] {
   switch(change.type) {
     case 'added':
       if (combined[change.newIndex] && combined[change.newIndex].doc.id == change.doc.id) {
@@ -62,17 +61,21 @@ export function combineChange(combined: DocumentChange[], change: DocumentChange
       }
       break;
     case 'modified':
-      // When an item changes position we first remove it
-      // and then add it's new position
-      if(change.oldIndex !== change.newIndex) {
-        combined.splice(change.oldIndex, 1);
-        combined.splice(change.newIndex, 0, change);
-      } else {
-        combined.splice(change.newIndex, 1, change);
+      if (combined[change.oldIndex] == null || combined[change.oldIndex].doc.id == change.doc.id) {
+        // When an item changes position we first remove it
+        // and then add it's new position
+        if(change.oldIndex !== change.newIndex) {
+          combined.splice(change.oldIndex, 1);
+          combined.splice(change.newIndex, 0, change);
+        } else {
+          combined.splice(change.newIndex, 1, change);
+        }
       }
       break;
     case 'removed':
-      combined.splice(change.oldIndex, 1);
+      if (combined[change.oldIndex] && combined[change.oldIndex].doc.id == change.doc.id) {
+        combined.splice(change.oldIndex, 1);
+      }
       break;
   }
   return combined;

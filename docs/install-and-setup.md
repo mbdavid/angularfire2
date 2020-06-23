@@ -19,19 +19,19 @@ cd <project-name>
 
 The Angular CLI's `new` command will set up the latest Angular build in a new project structure.
 
-### 2. Test your Setup
+### 2. Test your setup
 
 ```bash
 ng serve
 open http://localhost:4200
 ```
 
-You should see a message that says *App works!*
+You should see a message on the page that says *App works!*
 
 ### 3. Install AngularFire and Firebase
 
 ```bash
-npm install angularfire2 firebase --save
+npm install @angular/fire firebase --save
 ```
 
 Now that you have a new project setup, install AngularFire and Firebase from npm.
@@ -62,7 +62,7 @@ Open `/src/app/app.module.ts`, inject the Firebase providers, and specify your F
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import { AppComponent } from './app.component';
-import { AngularFireModule } from 'angularfire2';
+import { AngularFireModule } from '@angular/fire';
 import { environment } from '../environments/environment';
 
 @NgModule({
@@ -76,7 +76,8 @@ import { environment } from '../environments/environment';
 export class AppModule {}
 ```
 
-#### Custom FirebaseApp Names
+#### Custom `FirebaseApp` names
+
 You can optionally provide a custom FirebaseApp name with `initializeApp`.
 
 ```ts
@@ -91,14 +92,15 @@ You can optionally provide a custom FirebaseApp name with `initializeApp`.
 export class AppModule {}
 ```
 
-### 6. Setup individual @NgModules
+### 6. Setup individual `@NgModules`
 
 After adding the AngularFireModule you also need to add modules for the individual @NgModules that your application needs.
- - AngularFirestoreModule
- - AngularFireAuthModule
- - AngularFireDatabaseModule
- - AngularFireStorageModule
- - AngularFireMessagingModule (Future release)
+
+ - `AngularFirestoreModule`
+ - `AngularFireAuthModule`
+ - `AngularFireDatabaseModule`
+ - `AngularFireStorageModule`
+ - `AngularFireMessagingModule` (Future release)
 
 #### Adding the Firebase Database and Auth Modules
 
@@ -108,10 +110,10 @@ For example if your application was using both Firebase authentication and the F
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import { AppComponent } from './app.component';
-import { AngularFireModule } from 'angularfire2';
-import { AngularFirestoreModule } from 'angularfire2/firestore';
-import { AngularFireStorageModule } from 'angularfire2/storage';
-import { AngularFireAuthModule } from 'angularfire2/auth';
+import { AngularFireModule } from '@angular/fire';
+import { AngularFirestoreModule } from '@angular/fire/firestore';
+import { AngularFireStorageModule } from '@angular/fire/storage';
+import { AngularFireAuthModule } from '@angular/fire/auth';
 import { environment } from '../environments/environment';
 
 @NgModule({
@@ -128,13 +130,13 @@ import { environment } from '../environments/environment';
 export class AppModule {}
 ```
 
-### 7. Inject AngularFirestore
+### 7. Inject `AngularFirestore`
 
 Open `/src/app/app.component.ts`, and make sure to modify/delete any tests to get the sample working (tests are still important, you know):
 
 ```ts
 import { Component } from '@angular/core';
-import { AngularFirestore } from 'angularfire2/firestore';
+import { AngularFirestore } from '@angular/fire/firestore';
 
 @Component({
   selector: 'app-root',
@@ -148,14 +150,14 @@ export class AppComponent {
 }
 ```
 
-### 8. Bind to a list
+### 8. Bind a Firestore collection to a list
 
 In `/src/app/app.component.ts`:
 
 ```ts
 import { Component } from '@angular/core';
-import { AngularFirestore } from 'angularfire2/firestore';
-import { Observable } from 'rxjs/Observable';
+import { AngularFirestore } from '@angular/fire/firestore';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -186,7 +188,7 @@ Open `/src/app/app.component.html`:
 ng serve
 ```
 
-Run the serve command and go to `localhost:4200` in your browser.
+Run the serve command and navigate to `localhost:4200` in your browser.
 
 And that's it! If it's totally *borked*, file an issue and let us know.
 

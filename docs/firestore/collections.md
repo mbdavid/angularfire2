@@ -9,8 +9,8 @@ The `AngularFirestoreCollection` service is a wrapper around the native Firestor
 
 ```ts
 import { Component } from '@angular/core';
-import { AngularFirestore, AngularFirestoreCollection } from 'angularfire2/firestore';
-import { Observable } from 'rxjs/Observable';
+import { AngularFirestore, AngularFirestoreCollection } from '@angular/fire/firestore';
+import { Observable } from 'rxjs';
 
 export interface Item { name: string; }
 
@@ -74,6 +74,7 @@ interface DocumentSnapshot {
 There are multiple ways of streaming collection data from Firestore. 
 
 ### `valueChanges()`
+
 **What is it?** - The current state of your collection. Returns an Observable of data as a synchronized array of JSON objects. All Snapshot metadata is stripped and just the method provides only the data.
 
 **Why would you use it?** - When you just need a list of data. No document metadata is attached to the resulting array which makes it simple to render to a view.
@@ -83,10 +84,11 @@ There are multiple ways of streaming collection data from Firestore.
 **Best practices** - Use this method to display data on a page. It's simple but effective. Use `.snapshotChanges()` once your needs become more complex.
 
 #### Example of persisting a Document Id
+
 ```ts
 import { Component } from '@angular/core';
-import { AngularFirestore, AngularFirestoreCollection } from 'angularfire2/firestore';
-import { Observable } from 'rxjs/Observable';
+import { AngularFirestore, AngularFirestoreCollection } from '@angular/fire/firestore';
+import { Observable } from 'rxjs';
 
 export interface Item { id: string; name: string; }
 
@@ -123,6 +125,7 @@ export class AppComponent {
 ```
 
 ### `snapshotChanges()`
+
 **What is it?** - The current state of your collection. Returns an Observable of data as a synchronized array of `DocumentChangeAction[]`. 
 
 **Why would you use it?** - When you need a list of data but also want to keep around metadata. Metadata provides you the underyling `DocumentReference`, document id, and array index of the single document. Having the document's id around makes it easier to use data manipulation methods. This method gives you more horsepower with other Angular integrations such as ngrx, forms, and animations due to the `type` property. The `type` property on each `DocumentChangeAction` is useful for ngrx reducers, form states, and animation states.
@@ -132,11 +135,12 @@ export class AppComponent {
 **Best practices** - Use an observable operator to transform your data from `.snapshotChanges()`. Don't return the `DocumentChangeAction[]` to the template. See the example below.
 
 #### Example
+
 ```ts
 import { Component } from '@angular/core';
-import { AngularFirestore, AngularFirestoreCollection } from 'angularfire2/firestore';
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/operator/map';
+import { AngularFirestore, AngularFirestoreCollection } from '@angular/fire/firestore';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 export interface Shirt { name: string; price: number; }
 export interface ShirtId extends Shirt { id: string; }
@@ -159,18 +163,19 @@ export class AppComponent {
     // .snapshotChanges() returns a DocumentChangeAction[], which contains
     // a lot of information about "what happened" with each change. If you want to
     // get the data and the id use the map operator.
-    this.shirts = this.shirtCollection.snapshotChanges().map(actions => {
-      return actions.map(a => {
+    this.shirts = this.shirtCollection.snapshotChanges().pipe(
+      map(actions => actions.map(a => {
         const data = a.payload.doc.data() as Shirt;
         const id = a.payload.doc.id;
         return { id, ...data };
-      });
-    });
+      }))
+    );
   }
 }
 ```
 
 ### `stateChanges()`
+
 **What is it?** - Returns an Observable of the most recent changes as a `DocumentChangeAction[]`. 
 
 **Why would you use it?** - The above methods return a synchronized array sorted in query order. `stateChanges()` emits changes as they occur rather than syncing the query order. This works well for ngrx integrations as you can build your own data structure in your reducer methods.
@@ -178,10 +183,12 @@ export class AppComponent {
 **When would you not use it?** - When you just need a list of data. This is a more advanced usage of AngularFirestore.
 
 #### Example
+
 ```ts
 import { Component } from '@angular/core';
-import { AngularFirestore, AngularFirestoreCollection } from 'angularfire2/firestore';
-import { Observable } from 'rxjs/Observable';
+import { AngularFirestore, AngularFirestoreCollection } from '@angular/fire/firestore';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 export interface AccountDeposit { description: string; amount: number; }
 export interface AccountDepoistId extends AccountDeposit { id: string; }
@@ -201,19 +208,19 @@ export class AppComponent {
   deposits: Observable<AccountDepositId[]>;
   constructor(private readonly afs: AngularFirestore) {
     this.depositCollection = afs.collection<AccountDeposit>('deposits');
-    this.deposits = this.depositCollection.stateChanges(['added'])
-      .map(actions => {
-        return actions.map(a => {
-          const data = a.payload.doc.data() as AccountDeposit;
-          const id = a.payload.doc.id;
-          return { id, ...data };
-        })
-      });
+    this.deposits = this.depositCollection.stateChanges(['added']).pipe(
+      map(actions => actions.map(a => {
+        const data = a.payload.doc.data() as AccountDeposit;
+        const id = a.payload.doc.id;
+        return { id, ...data };
+      }))
+    );
   }
 }
 ```
 
 ### `auditTrail()`
+
 **What is it?** - Returns an Observable of `DocumentChangeAction[]` as they occur. Similar to `stateChanges()`, but instead it keeps around the trail of events as an array.
 
 **Why would you use it?** - This method is like `stateChanges()` except it is not ephemeral. It collects each change in an array as they occur. This is useful for ngrx integrations where you need to replay the entire state of an application. This also works as a great debugging tool for all applications. You can simple write `afs.collection('items').auditTrail().subscribe(console.log)` and check the events in the console as they occur.
@@ -221,10 +228,12 @@ export class AppComponent {
 **When would you not use it?** - When you just need a list of data. This is a more advanced usage of AngularFirestore. 
 
 #### Example
+
 ```ts
 import { Component } from '@angular/core';
-import { AngularFirestore, AngularFirestoreCollection } from 'angularfire2/firestore';
-import { Observable } from 'rxjs/Observable';
+import { AngularFirestore, AngularFirestoreCollection } from '@angular/fire/firestore';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 export interface AccountLogItem { description: string; amount: number; }
 export interface AccountLogItemId extends AccountLogItem { id: string; }
@@ -244,14 +253,13 @@ export class AppComponent {
   accountLogs: Observable<AccountLogItemId[]>;
   constructor(private readonly afs: AngularFirestore) {
     this.accountLogCollection = afs.collection<AccountLogItem>('accountLog');
-    this.accountLogs = this.accountLogCollection.auditTrail()
-      .map(actions => {
-        return actions.map(a => {
-          const data = a.payload.doc.data() as AccountLogItem;
-          const id = a.payload.doc.id;
-          return { id, ...data };
-        })
-      });
+    this.accountLogs = this.accountLogCollection.auditTrail().pipe(
+      map(actions => actions.map(a => {
+        const data = a.payload.doc.data() as AccountLogItem;
+        const id = a.payload.doc.id;
+        return { id, ...data };
+      }))
+    );
   }
 }
 ```
@@ -260,7 +268,8 @@ export class AppComponent {
 
 There are three `DocumentChangeType`s in Firestore: `added`, `removed`, and `modified`. Each streaming method listens to all three by default. However, you may only be intrested in one of these events. You can specify which events you'd like to use through the first parameter of each method:
 
-#### Basic sample
+#### Basic example
+
 ```ts
   constructor(private afs: AngularFirestore): {
     this.itemsCollection = afs.collection<Item>('items');
@@ -268,11 +277,12 @@ There are three `DocumentChangeType`s in Firestore: `added`, `removed`, and `mod
   }
 ```
 
-#### Component Sample
+#### Component example
+
 ```ts
 import { Component } from '@angular/core';
-import { AngularFirestore, AngularFirestoreCollection } from 'angularfire2/firestore';
-import { Observable } from 'rxjs/Observable';
+import { AngularFirestore, AngularFirestoreCollection } from '@angular/fire/firestore';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -304,7 +314,8 @@ For example, a user updates the third item in a list. In a state based method li
 
 To add a new document to a collection with a generated id use the `add()` method. This method uses the type provided by the generic class to validate it's type structure.
 
-#### Basic Sample
+#### Basic example
+
 ```ts
   constructor(private afs: AngularFirestore): {
     const shirtsCollection = afs.collection<Item>('tshirts');
